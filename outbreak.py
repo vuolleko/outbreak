@@ -13,7 +13,7 @@ pd.set_option('display.width', 1000)
 class Infectee:
     """Infected individual, instantiated upon infection."""
 
-    def __init__(self, infector, infection_time):
+    def __init__(self, infector, infection_time, random_state=None):
         self.infector = infector  # individual who infected self
         self.infected = []  # list of individuals infected by self
         self.infection_time = infection_time
@@ -22,8 +22,8 @@ class Infectee:
         # set future evolution steps of the infection
         self.status_trajectory = [0]  # ref. `status_dict`
         self.end_times = np.full(len(status_dict), np.nan)  # unit: 1 day
-        latent_period = ss.gamma.rvs(2., scale=5.)
-        incubation_factor = ss.uniform.rvs(0.8, 0.4)
+        latent_period = ss.gamma.rvs(2., scale=5., random_state=random_state)
+        incubation_factor = ss.uniform.rvs(0.8, 0.4, random_state=random_state)
 
         # incubation time may differ from latent time
         if incubation_factor > 1:
@@ -36,18 +36,18 @@ class Infectee:
             self.end_times[2] = latent_period
 
         self.status_trajectory.append(3)
-        infectious_period = ss.gamma.rvs(1., scale=5.)
+        infectious_period = ss.gamma.rvs(1., scale=5., random_state=random_state)
         two_periods = latent_period + infectious_period
         self.end_times[3] = two_periods
 
-        will_recover = ss.bernoulli.rvs(0.3)
+        will_recover = ss.bernoulli.rvs(0.3, random_state=random_state)
         if will_recover:
             self.status_trajectory.extend([4, 6])
-            recover_period = ss.gamma.rvs(4., scale=3.)
+            recover_period = ss.gamma.rvs(4., scale=3., random_state=random_state)
             time_end = two_periods + recover_period
         else:
             self.status_trajectory.extend([5, 7])
-            dying_period = ss.gamma.rvs(4./9., scale=9.)
+            dying_period = ss.gamma.rvs(4./9., scale=9., random_state=random_state)
             time_end = two_periods + dying_period
         self.end_times[self.status_trajectory[-2]] = time_end
         self.end_times += infection_time
@@ -76,14 +76,14 @@ class Infectee:
     def _time_next(self):
         return self.end_times[self._status]
 
-    def update(self, time):
+    def update(self, time, random_state=None):
         """When time comes, update status of infection and infect others."""
         if time >= self._time_next:
             self._status = next(self._status_iter)
 
         if self.can_infect:
             if time - self._last_infection > infect_time:
-                new_infectee = self.infect(Infectee(self, time))
+                new_infectee = self.infect(Infectee(self, time, random_state))
                 self._last_infection = time
 
                 return new_infectee
@@ -95,18 +95,18 @@ class Infectee:
         return str
 
 
-def simulate():
+def simulate(max_times=150, full_output=False, random_state=None):
     time = 0
     max_times = 150
-    infected = [Infectee(None, time)]  # start with 1
     counters = pd.DataFrame(index=np.arange(1, max_times),
                             columns=status_dict.values())
+    infected = [Infectee(None, time, random_state)]  # start with 1
 
     while time < max_times:
         time += 1
         counters.loc[time] = 0
         for i in infected:
-            new_i = i.update(time)
+            new_i = i.update(time, random_state)
             if new_i:
                 infected.append(new_i)
             counters.loc[time, i.status] += 1
@@ -118,7 +118,7 @@ def simulate():
 
 
 if __name__ == '__main__':
-    counters = simulate()
+    counters = simulate(150, True, np.random.RandomState(2))
     # print(counters)
     print("\n")
     print(counters.iloc[-1])
