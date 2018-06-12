@@ -97,29 +97,47 @@ class Infectee:
 
 def simulate(max_times=150, full_output=False, random_state=None):
     time = 0
-    max_times = 150
-    counters = pd.DataFrame(index=np.arange(1, max_times),
-                            columns=status_dict.values())
     infected = [Infectee(None, time, random_state)]  # start with 1
+
+    if full_output:
+        counters = pd.DataFrame(index=np.arange(1, max_times),
+                                columns=status_dict.values())
 
     while time < max_times:
         time += 1
-        counters.loc[time] = 0
+
+        if full_output:
+            counters.loc[time] = 0
+
         for i in infected:
             new_i = i.update(time, random_state)
             if new_i:
                 infected.append(new_i)
-            counters.loc[time, i.status] += 1
 
-        if time % 10 == 0:
+            if full_output:
+                counters.loc[time, i.status] += 1  # slow!!!
+
+        if full_output and (time % 10 == 0):
             print(counters.loc[time:time])
+
+    if not full_output:
+        counters = np.zeros(len(status_dict), dtype=np.int32)
+        for i in infected:
+            counters[i._status] += 1
 
     return counters
 
 
 if __name__ == '__main__':
-    counters = simulate(150, True, np.random.RandomState(2))
-    # print(counters)
+    max_times = 150
+    full_output = False
+    seed = 2
+    counters = simulate(max_times, full_output, np.random.RandomState(seed))
+
     print("\n")
-    print(counters.iloc[-1])
-    print("\nCases reported: {}".format(counters.iloc[-1, [1, 3, 4, 5, 6, 7]].sum()))
+    if full_output:
+        print(counters.iloc[-1])
+        print("\nCases reported: {}".format(counters.iloc[-1, [1, 3, 4, 5, 6, 7]].sum()))
+    else:
+        for i in range(len(status_dict)):
+            print("{}: {}".format(status_dict[i], counters[i]))
