@@ -226,18 +226,31 @@ class Infectee:
         return str
 
 
+def summarize(counters):
+    """Summarize final result from simulation."""
+    if type(counters) == pd.DataFrame:
+        print(counters.iloc[-1])
+        print("\nCases: {} reported, {} unreported, {} total".format(
+              counters.iloc[-1, [1, 3, 4, 5, 6, 7]].sum(),
+              counters.iloc[-1, [0, 2]].sum(),
+              counters.iloc[-1].sum()))
+
+    else:
+        for i in range(n_states):
+            print("{}: {}".format(status_dict[i], counters[i]))
+        print("\nCases: {} reported, {} unreported, {} total".format(
+              counters[[1, 3, 4, 5, 6, 7]].sum(),
+              counters[[0, 2]].sum(),
+              counters.sum()))
+
+
 if __name__ == '__main__':
     full_output = False
     seed = 2
     R0 = 1.7
 
-    counters = simulate(R0, full_output=False,
+    counters = simulate(R0, full_output=full_output,
                         random_state=np.random.RandomState(seed))
 
     print("\n")
-    if full_output:
-        print(counters.iloc[-1])
-        print("\nCases reported: {}".format(counters.iloc[-1, [1, 3, 4, 5, 6, 7]].sum()))
-    else:
-        for i in range(n_states):
-            print("{}: {}".format(status_dict[i], counters[i]))
+    summarize(counters)
