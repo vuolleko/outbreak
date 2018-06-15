@@ -1,7 +1,6 @@
 """Outbreak of infectious disease."""
 
 import numpy as np
-import pandas as pd
 import scipy.stats as ss
 
 
@@ -9,7 +8,6 @@ status_dict = {i: v for i, v in enumerate(
     ['latent', 'symptoms-non-infectious', 'latent-infectious', 'symptoms',
      'recovering', 'dying', 'recovered', 'dead'])}
 n_states = len(status_dict)
-pd.set_option('display.width', 1000)
 
 
 def simulate(R0, full_output=False, random_state=np.random, **kwargs):
@@ -48,7 +46,8 @@ def simulate(R0, full_output=False, random_state=np.random, **kwargs):
               'will_recover': {'p': 0.3},  # bernoulli
               'recover_period': {'a': 4., 'scale': 3.},  # gamma
               'dying_period': {'a': 4./9., 'scale': 9.},  # gamma
-              'n_iter': 150}  # number of model iterations (e.g. days)
+              'n_iter': 147,  # number of model iterations (e.g. days)
+              'output_freq': 7}  # frequency of output
     params.update(kwargs)
 
     # convert R0 into a period between infections caused by single individual
@@ -59,31 +58,18 @@ def simulate(R0, full_output=False, random_state=np.random, **kwargs):
     time = 0
     infected = [Infectee(None, time, params, random_state)]  # start with 1
 
-    if full_output:
-        counters = pd.DataFrame(index=np.arange(1, params['n_iter']),
-                                columns=status_dict.values())
+    counters = np.zeros((params['n_iter'], n_states), dtype=np.int32)
 
     while time < params['n_iter']:
         time += 1
-
-        if full_output:
-            counters.loc[time] = 0
 
         for i in infected:
             new_i = i.update(time, params, random_state)
             if new_i:
                 infected.append(new_i)
 
-            if full_output:
-                counters.loc[time, i.status] += 1  # slow!!!
-
-        if full_output and (time % 10 == 0):
-            print(counters.loc[time:time])
-
-    if not full_output:
-        counters = np.zeros(n_states, dtype=np.int32)
-        for i in infected:
-            counters[i._status] += 1
+            if time % params['output_freq'] == 0:
+                counters[time-1, i.istatus] += 1
 
     return counters
 
@@ -159,7 +145,7 @@ class Infectee:
         self.end_times += infection_time
 
         self._status_iter = iter(self.status_trajectory)
-        self._status = next(self._status_iter)
+        self.istatus = next(self._status_iter)
 
     def infect(self, other):
         """Mark `other` as infected by self.
@@ -180,17 +166,17 @@ class Infectee:
     @property
     def can_infect(self):
         """Return whether self can infect others."""
-        return (self._status == 2) or (self._status == 3)
+        return (self.istatus == 2) or (self.istatus == 3)
 
     @property
     def status(self):
         """Return a string representation of current infection status."""
-        return status_dict[self._status]
+        return status_dict[self.istatus]
 
     @property
     def _time_next(self):
         """Return time of next phase in infection."""
-        return self.end_times[self._status]
+        return self.end_times[self.istatus]
 
     def update(self, time, params, random_state=None):
         """Depending on time, update status of infection and infect someone.
@@ -209,7 +195,7 @@ class Infectee:
 
         """
         if time >= self._time_next:
-            self._status = next(self._status_iter)
+            self.istatus = next(self._status_iter)
 
         if self.can_infect:
             if time - self._last_infection > params['infect_delta']:
@@ -228,29 +214,17 @@ class Infectee:
 
 def summarize(counters):
     """Summarize final result from simulation."""
-    if type(counters) == pd.DataFrame:
-        print(counters.iloc[-1])
-        print("\nCases: {} reported, {} unreported, {} total".format(
-              counters.iloc[-1, [1, 3, 4, 5, 6, 7]].sum(),
-              counters.iloc[-1, [0, 2]].sum(),
-              counters.iloc[-1].sum()))
-
-    else:
-        for i in range(n_states):
-            print("{}: {}".format(status_dict[i], counters[i]))
-        print("\nCases: {} reported, {} unreported, {} total".format(
-              counters[[1, 3, 4, 5, 6, 7]].sum(),
-              counters[[0, 2]].sum(),
-              counters.sum()))
+    for i in range(n_states):
+        print("{}: {}".format(status_dict[i], counters[-1, i]))
+    print("\nCases: {} reported, {} unreported, {} total".format(
+          counters[-1, [1, 3, 4, 5, 6, 7]].sum(),
+          counters[-1, [0, 2]].sum(),
+          counters[-1, :].sum()))
 
 
 if __name__ == '__main__':
-    full_output = False
     seed = 2
     R0 = 1.7
 
-    counters = simulate(R0, full_output=full_output,
-                        random_state=np.random.RandomState(seed))
-
-    print("\n")
+    counters = simulate(R0, random_state=np.random.RandomState(seed))
     summarize(counters)
