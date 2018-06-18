@@ -47,7 +47,7 @@ def simulate(R0, full_output=False, random_state=np.random, **kwargs):
               'recover_period': {'a': 4., 'scale': 3.},  # gamma
               'dying_period': {'a': 4./9., 'scale': 9.},  # gamma
               'n_iter': 147,  # number of model iterations (e.g. days)
-              'output_freq': 7}  # frequency of output
+              'output_freq': 7}  # frequency of output (e.g. week)
     params.update(kwargs)
 
     # convert R0 into a period between infections caused by single individual
@@ -58,18 +58,23 @@ def simulate(R0, full_output=False, random_state=np.random, **kwargs):
     time = 0
     infected = [Infectee(None, time, params, random_state)]  # start with 1
 
-    counters = np.zeros((params['n_iter'], n_states), dtype=np.int32)
+    n_output = round(params['n_iter'] / params['output_freq'] + 0.49999)
+    counters = np.zeros((n_output, n_states), dtype=np.int32)
+    i_counter = 0
 
     while time < params['n_iter']:
         time += 1
 
         for i in infected:
             new_i = i.update(time, params, random_state)
-            if new_i:
+            if new_i:  # new infectee
                 infected.append(new_i)
 
             if time % params['output_freq'] == 0:
-                counters[time-1, i.istatus] += 1
+                counters[i_counter, i.istatus] += 1
+
+        if time % params['output_freq'] == 0:
+            i_counter += 1
 
     return counters
 
