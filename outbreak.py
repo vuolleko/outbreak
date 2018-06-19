@@ -46,7 +46,7 @@ def simulate(R0, full_output=False, random_state=np.random, **kwargs):
               'will_recover': {'p': 0.3},  # bernoulli
               'recover_period': {'a': 4., 'scale': 3.},  # gamma
               'dying_period': {'a': 4./9., 'scale': 9.},  # gamma
-              'n_iter': 147,  # number of model iterations (e.g. days)
+              'n_iter': 154,  # number of model iterations (e.g. days)
               'output_freq': 7}  # frequency of output (e.g. week)
     params.update(kwargs)
 
@@ -217,14 +217,27 @@ class Infectee:
         return str
 
 
-def summarize(counters):
+def print_summary(counters):
     """Summarize final result from simulation."""
     for i in range(n_states):
         print("{}: {}".format(status_dict[i], counters[-1, i]))
     print("\nCases: {} reported, {} unreported, {} total".format(
-          counters[-1, [1, 3, 4, 5, 6, 7]].sum(),
-          counters[-1, [0, 2]].sum(),
-          counters[-1, :].sum()))
+          n_observed(counters[-1]), n_latent(counters[-1]), n_cases(counters[-1])))
+
+
+def n_cases(counters):
+    """Return total number of cases (reported and unreported)."""
+    return np.sum(counters, axis=-1)
+
+
+def n_observed(counters):
+    """Return total number of observed cases."""
+    return np.sum(counters[..., [1, 3, 4, 5, 6, 7]], axis=-1)
+
+
+def n_latent(counters):
+    """Return total number of unobserved cases."""
+    return np.sum(counters[..., [0, 2]], axis=-1)
 
 
 if __name__ == '__main__':
@@ -232,4 +245,4 @@ if __name__ == '__main__':
     R0 = 1.7
 
     counters = simulate(R0, random_state=np.random.RandomState(seed))
-    summarize(counters)
+    print_summary(counters)
