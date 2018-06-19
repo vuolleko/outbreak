@@ -67,8 +67,8 @@ def simulate(R0, full_output=False, random_state=np.random, **kwargs):
 
         for i in infected:
             new_i = i.update(time, params, random_state)
-            if new_i:  # new infectee
-                infected.append(new_i)
+            if new_i:  # new infectees
+                infected.extend(new_i)
 
             if time % params['output_freq'] == 0:
                 counters[i_counter, i.istatus] += 1
@@ -202,13 +202,14 @@ class Infectee:
         if time >= self._time_next:
             self.istatus = next(self._status_iter)
 
+        infected = []
         if self.can_infect:
-            if time - self._last_infection > params['infect_delta']:
+            while time - self._last_infection > params['infect_delta']:
                 new_infectee = self.infect(Infectee(self, time, params, random_state))
-                self._last_infection = time
+                self._last_infection += params['infect_delta']
+                infected.append(new_infectee)
 
-                return new_infectee
-        return None
+        return infected
 
     def __str__(self):
         """Return string representation of self."""
