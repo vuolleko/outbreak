@@ -7,67 +7,75 @@
 
 typedef unsigned int uint;
 
+const uint N_STATES = 8; // number of different infection statuses
+
 // Default settings for simulation
 // https://softwareengineering.stackexchange.com/a/329733
 struct params_struct
 {
-    double latent_period_shape = 2.; // gamma
-    double latent_period_scale = 5.;
-    double incub_factor_min = 0.8; // uniform
-    double incub_factor_max = 1.2;
-    double infect_period_shape = 1.; // gamma
-    double infect_period_scale = 5.;
-    double p_recovery = 0.3;          // bernoulli
-    double recover_period_shape = 4.; // gamma
-    double recover_period_scale = 3.;
-    double dying_period_shape = 4. / 9.; // gamma
-    double dying_period_scale = 9.;
-    double infect_delta = 2.941;  // time between infections
-    uint n_iter = 154;       // number of model iterations (e.g. days)
-    uint output_interval = 7;    // interval of output (e.g. week)
-    const uint n_states = 8; // number of different infection statuses
+  double latent_period_shape = 2.; // gamma
+  double latent_period_scale = 5.;
+  double incub_factor_min = 0.8; // uniform
+  double incub_factor_max = 1.2;
+  double infect_period_shape = 1.; // gamma
+  double infect_period_scale = 5.;
+  double p_recovery = 0.3;          // bernoulli
+  double recover_period_shape = 4.; // gamma
+  double recover_period_scale = 3.;
+  double dying_period_shape = 4. / 9.; // gamma
+  double dying_period_scale = 9.;
+  double infect_delta = 2.941; // time between infections
+  uint n_iter = 154;           // number of model iterations (e.g. days)
+  uint output_interval = 7;    // interval of output (e.g. week)
 };
 
+// Infection states (ref. Infection.istatus)
+const std::string States[N_STATES]{
+    "latent",
+    "symptoms_non_infectious",
+    "latent_infectious",
+    "symptoms",
+    "recovering",
+    "dying",
+    "recovered",
+    "dead"};
 
 class Infectee
 {
-  public:
-    const Infectee *infector;             // The individual who caused infection.
-    const double infection_time;          // Time of infection.
-    std::vector<Infectee*> infected; // Individuals infected by self.
+public:
+  const Infectee *infector;         // The individual who caused infection.
+  const double infection_time;      // Time of infection.
+  std::vector<Infectee *> infected; // Individuals infected by self.
 
-    Infectee(Infectee *infector, double infection_time, std::mt19937_64 &prng, params_struct params);
-    Infectee* infect(Infectee *other);  // Mark `other` as infected by self.
-    int n_infected() const;  // Return the number of infected by self.
-    int istatus() const;  // Return the index to current status;
-    bool can_infect() const; // Return whether self can infect others.
+  Infectee(Infectee *infector, double infection_time, std::mt19937_64 &prng, params_struct params);
+  Infectee *infect(Infectee *other); // Mark `other` as infected by self.
+  int n_infected() const;            // Return the number of infected by self.
+  int istatus() const;               // Return the index to current status;
+  bool can_infect() const;           // Return whether self can infect others.
+  std::string status() const;        // Return current status from the State enum.
 
-    std::vector<Infectee*> update(double time, std::mt19937_64 &prng, params_struct params);  // Depending on time, update status of infection and infect someone.
+  std::vector<Infectee *> update(double time, std::mt19937_64 &prng, params_struct params); // Depending on time, update status of infection and infect someone.
 
-  private:
-    uint time_last_infection;            // Time of latest infection by self.
-    std::vector<uint> status_trajectory; // Progression of infection with respect to infection states.
-    Eigen::ArrayXd end_times;            // End times of phases in `status_trajectory`.
-    std::vector<uint>::iterator status_iter;  // Iterator for `status_trajectory`.
+private:
+  uint time_last_infection;                // Time of latest infection by self.
+  std::vector<uint> status_trajectory;     // Progression of infection with respect to infection states.
+  Eigen::ArrayXd end_times;                // End times of phases in `status_trajectory`.
+  std::vector<uint>::iterator status_iter; // Iterator for `status_trajectory`.
 
-    double time_next() const;  // Return time of next phase in infection.
-
+  double time_next() const; // Return time of next phase in infection.
 };
 
-
 // Allow printing a representation of Infectee objects
-inline
-std::ostream& operator<<(std::ostream& os, Infectee const &inf) 
+inline std::ostream &operator<<(std::ostream &os, Infectee const &inf)
 {
   os << "Individual " << &inf << " was infected at t=" << inf.infection_time;
   os << " and has infected " << inf.n_infected() << " others: ";
-  for (int i=0; i<inf.n_infected(); ++i)
+  for (int i = 0; i < inf.n_infected(); ++i)
   {
     os << ' ' << inf.infected[i];
     os.flush();
   }
   return os;
 }
-
 
 #endif

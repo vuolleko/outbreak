@@ -31,14 +31,13 @@ Eigen::MatrixXi simulate(double R0, std::mt19937_64 &prng, const params_struct &
 
     uint n_output = lrint(1. * params.n_iter / params.output_interval);
 
-    Eigen::MatrixXi counters = Eigen::MatrixXi::Zero(n_output, params.n_states);
+    Eigen::MatrixXi counters = Eigen::MatrixXi::Zero(n_output, N_STATES);
 
     std::vector<Infectee *> infected, new_infected, new_infected1;
     infected.push_back(new Infectee(NULL, 0, prng, params));
     uint output_counter = 0;
     for (int time = 1; time <= params.n_iter; ++time)
     {
-
         // iterate over all infected individuals
         for (std::vector<Infectee *>::iterator it = infected.begin(); it != infected.end(); ++it)
         {

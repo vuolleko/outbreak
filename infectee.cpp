@@ -20,7 +20,7 @@ Infectee::Infectee(Infectee *infector, double infection_time, std::mt19937_64 &p
 
     // In the following several lines, set future evolution steps of the infection
     this->status_trajectory.push_back(0);
-    this->end_times = Eigen::ArrayXd(params.n_states);
+    this->end_times = Eigen::ArrayXd(N_STATES);
     this->end_times = std::nan("1."); // default times NaNs
     double latent_period = gamma_latent_period(prng);
     double incubation_factor = unif_incub_factor(prng);
@@ -87,6 +87,12 @@ int Infectee::istatus() const
 {
     // Return the index to current status;
     return *(this->status_iter);
+}
+
+std::string Infectee::status() const
+{
+    // Return current status from the State enum.
+    return States[this->istatus()];
 }
 
 bool Infectee::can_infect() const
