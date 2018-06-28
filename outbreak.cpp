@@ -6,8 +6,6 @@ who infected whom and when. Infected individuals are initially in a latent phase
 they show no symptoms nor can infect others. The illness then progresses according to
 stochastic processes.
 
-The current model setup is intended for inferring the basic reproduction number R0.
-
 Follows the model description in:
 
 Tom Britton and Gianpaolo Scalia Tomba (2018)
@@ -23,57 +21,67 @@ Estimation in emerging epidemics: biases and remedies, arXiv:1803.01688v1.
 
 #include "infectee.hpp"
 
-Eigen::MatrixXi simulate(double R0, std::mt19937_64 &prng, const params_struct &params = params_struct())
+class Outbreak
 {
+  public:
+    std::vector<Infectee *> infected; // infected individuals (present and past)
+    Eigen::MatrixXi counters;         // counts of each infection state per output interval
+    std::mt19937_64 prng;             // pseudo random-number generator
+    params_struct params;             // user-given parameters (defaults in infectee.hpp)
 
-    // double mean_inf_period = params.infect_period_shape * params.infect_period_scale;
-    // params.infect_delta = mean_inf_period / R0;
+    Outbreak(std::mt19937_64 &prng, const params_struct &params = params_struct()) : prng(prng), params(params)
 
-    uint n_output = lrint(1. * params.n_iter / params.output_interval);
-
-    Eigen::MatrixXi counters = Eigen::MatrixXi::Zero(n_output, N_STATES);
-
-    std::vector<Infectee *> infected, new_infected, new_infected1;
-    infected.push_back(new Infectee(NULL, 0, prng, params));
-    uint output_counter = 0;
-    for (int time = 1; time <= params.n_iter; ++time)
     {
-        // iterate over all infected individuals
-        for (std::vector<Infectee *>::iterator it = infected.begin(); it != infected.end(); ++it)
-        {
-            new_infected1 = (*it)->update(time, prng, params);
+        uint n_output = lrint(1. * params.n_iter / params.output_interval);
 
-            if (!new_infected1.empty()) // append new infectees by single infector
+        this->counters = Eigen::MatrixXi::Zero(n_output, N_STATES);
+
+        std::vector<Infectee *> new_infected, new_infected1;
+        this->infected.push_back(new Infectee(NULL, 0, prng, params));
+        uint output_counter = 0;
+        for (int time = 1; time <= params.n_iter; ++time)
+        {
+            // iterate over all infected individuals
+            for (std::vector<Infectee *>::iterator it = this->infected.begin(); it != this->infected.end(); ++it)
             {
-                new_infected.reserve(new_infected.size() + new_infected1.size());
-                new_infected.insert(new_infected.end(), new_infected1.begin(), new_infected1.end());
+                new_infected1 = (*it)->update(time, prng, params);
+
+                if (!new_infected1.empty()) // append new infectees by single infector
+                {
+                    new_infected.reserve(new_infected.size() + new_infected1.size());
+                    new_infected.insert(new_infected.end(), new_infected1.begin(), new_infected1.end());
+                }
+
+                if (time % params.output_interval == 0)
+                    this->counters(output_counter, (*it)->istatus())++;
+            }
+
+            if (!new_infected.empty()) // append all new infectees from time step
+            {
+                // std::cout << "Infected total " << new_infected.size() << std::endl;
+                this->infected.reserve(this->infected.size() + new_infected.size());
+                this->infected.insert(this->infected.end(), new_infected.begin(), new_infected.end());
+                new_infected.clear();
             }
 
             if (time % params.output_interval == 0)
-                counters(output_counter, (*it)->istatus())++;
+                output_counter++;
         }
-
-        if (!new_infected.empty()) // append all new infectees from time step
-        {
-            // std::cout << "Infected total " << new_infected.size() << std::endl;
-            infected.reserve(infected.size() + new_infected.size());
-            infected.insert(infected.end(), new_infected.begin(), new_infected.end());
-            new_infected.clear();
-        }
-
-        if (time % params.output_interval == 0)
-            output_counter++;
     }
 
-    // std::cout << *(infected[0]) << std::endl;
-    // std::cout << *(infected[1]) << std::endl;
-    // std::cout << *(infected[2]) << std::endl;
-    return counters;
-}
+    Eigen::MatrixXi getCounters()
+    {
+        return this->counters;
+    }
+
+    std::vector<Infectee*> getInfected()
+    {
+        return this->infected;
+    }
+};
 
 int main(int argc, char *argv[])
 {
-    double R0 = 1.7;
     params_struct params;
     params.n_iter = 70;
     uint seed;
@@ -88,9 +96,15 @@ int main(int argc, char *argv[])
     }
     std::mt19937_64 prng(seed);
 
-    Eigen::MatrixXi c = simulate(R0, prng, params);
+    Outbreak ob(prng, params);
+    Eigen::MatrixXi c = ob.getCounters();
 
     std::cout << c << std::endl;
+
+    std::vector<Infectee*> inf = ob.getInfected();
+    std::cout << *(inf[0]) << std::endl;
+    std::cout << *(inf[2]) << std::endl;
+    std::cout << *(inf[2]) << std::endl;
 
     return 0;
 }
