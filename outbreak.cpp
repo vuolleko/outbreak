@@ -39,7 +39,7 @@ class Outbreak
         std::vector<Infectee *> new_infected, new_infected1;
         this->infected.push_back(new Infectee(NULL, 0, prng, params));
         uint output_counter = 0;
-        for (int time = 1; time <= params.n_iter; ++time)
+        for (uint time = 1; time <= params.n_iter; ++time)
         {
             // iterate over all infected individuals
             for (std::vector<Infectee *>::iterator it = this->infected.begin(); it != this->infected.end(); ++it)
