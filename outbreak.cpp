@@ -69,6 +69,12 @@ class Outbreak
         }
     }
 
+    ~Outbreak()
+    {
+        for (std::vector<Infectee *>::iterator it = this->infected.begin(); it != this->infected.end(); ++it)
+            delete *it;  // need to release these manually as allocated dynamically
+    }
+
     Eigen::MatrixXi getCounters()
     {
         return this->counters;

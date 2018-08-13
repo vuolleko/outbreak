@@ -70,6 +70,11 @@ Infectee::Infectee(Infectee *infector, double infection_time, std::mt19937_64 &p
     this->time_last_infection = infection_time;  // just an initial value
 }
 
+Infectee::~Infectee()
+{
+    // std::cout << "Infectee destroyed" << std::endl;
+}
+
 Infectee *Infectee::infect(Infectee *other)
 {
     // Mark `other` as infected by self.
