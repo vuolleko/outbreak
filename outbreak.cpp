@@ -58,14 +58,23 @@ class Outbreak
 
             if (!new_infected.empty()) // append all new infectees from time step
             {
-                // std::cout << "Infected total " << new_infected.size() << std::endl;
                 this->infected.reserve(this->infected.size() + new_infected.size());
                 this->infected.insert(this->infected.end(), new_infected.begin(), new_infected.end());
+                // std::cout << "t=" << time << ": New infected " << new_infected.size() << ", total " << infected.size() << std::endl;
                 new_infected.clear();
             }
 
             if (time % params.output_interval == 0)
+            {
+                std::cout << "t=" << time << ": " << this->counters.row(output_counter) << std::endl;
                 output_counter++;
+            }
+
+            if (this->infected.size() > params.max_infected)
+            {
+                std::cout << "Max number of infected individuals reached. Stopping." << std::endl;
+                break;
+            }
         }
     }
 
@@ -112,7 +121,7 @@ class Outbreak
 int main(int argc, char *argv[])
 {
     params_struct params;
-    params.n_iter = 70;
+    // params.n_iter = 70;
     uint seed;
     double R0;
 
