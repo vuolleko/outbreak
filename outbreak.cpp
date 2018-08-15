@@ -66,13 +66,15 @@ class Outbreak
 
             if (time % params.output_interval == 0)
             {
-                std::cout << "t=" << time << ": " << this->counters.row(output_counter) << std::endl;
+                if (params.verbose)
+                    std::cout << "t=" << time << ": " << this->counters.row(output_counter) << std::endl;
                 output_counter++;
             }
 
             if (this->infected.size() > params.max_infected)
             {
-                std::cout << "Max number of infected individuals reached. Stopping." << std::endl;
+                if (params.verbose)
+                    std::cout << "Max number of infected individuals reached. Stopping." << std::endl;
                 break;
             }
         }
@@ -122,6 +124,7 @@ int main(int argc, char *argv[])
 {
     params_struct params;
     // params.n_iter = 70;
+    params.verbose = true;
     uint seed;
     double R0;
 

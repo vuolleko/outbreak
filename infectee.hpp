@@ -28,6 +28,7 @@ struct params_struct
     uint n_iter = 154;           // number of model iterations (e.g. days)
     uint output_interval = 7;    // interval of output (e.g. week)
     uint max_infected = 100000;  // stop iterating if reached
+    bool verbose = false;  // true for printing progress etc.
 };
 
 // Infection states (ref. Infection.istatus)
