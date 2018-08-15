@@ -54,6 +54,7 @@ public:
     int n_infected() const;            // Return the number of infected by self.
     int istatus() const;               // Return the index to current status;
     bool can_infect() const;           // Return whether self can infect others.
+    bool is_reported() const;          // Return whether infection has been reported.
     std::string status() const;        // Return current status from the State enum.
 
     std::vector<Infectee *> update(double time, std::mt19937_64 &prng, params_struct params); // Depending on time, update status of infection and infect someone.

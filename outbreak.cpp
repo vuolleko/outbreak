@@ -84,6 +84,29 @@ class Outbreak
     {
         return this->infected;
     }
+
+    float getR0()
+    {
+        // Estimate the basic reproduction number (R0) by considering
+        // reported cases due to infectors now past the infectious period.
+        int n_infected = 0;
+        int n_infectors = 0;
+
+        for (std::vector<Infectee *>::iterator it = this->infected.begin(); it != this->infected.end(); ++it)
+        {
+            if ((*it)->istatus() > 3)
+            {
+                n_infectors++;
+                for (std::vector<Infectee *>::iterator it2 = (*it)->infected.begin(); it2 != (*it)->infected.end(); ++it2)
+                {
+                    if ((*it2)->is_reported())
+                        n_infected++;
+                }
+            }
+        }
+
+        return (float) n_infected / n_infectors;
+    }
 };
 
 int main(int argc, char *argv[])
@@ -91,6 +114,7 @@ int main(int argc, char *argv[])
     params_struct params;
     params.n_iter = 70;
     uint seed;
+    double R0;
 
     if (argc > 1)
     {
@@ -100,12 +124,23 @@ int main(int argc, char *argv[])
     {
         seed = 0;
     }
+    if (argc > 2)
+    {
+        R0 = std::atof(argv[2]);
+    }
+    else
+    {
+        R0 = 1.7;
+    }
     std::mt19937_64 prng(seed);
+    params.infect_delta = params.infect_period_shape * params.infect_period_scale / R0;
 
     Outbreak ob(prng, params);
-    Eigen::MatrixXi c = ob.getCounters();
 
-    std::cout << c << std::endl;
+    std::cout << "Estimated R0: " << ob.getR0() << std::endl;
+
+    // Eigen::MatrixXi c = ob.getCounters();
+    // std::cout << c << std::endl;
 
     std::vector<Infectee*> inf = ob.getInfected();
     std::cout << *(inf[0]) << std::endl;

@@ -106,6 +106,12 @@ bool Infectee::can_infect() const
     return (this->istatus() == 2) | (this->istatus() == 3);
 }
 
+bool Infectee::is_reported() const
+{
+    // Return whether infection has been reported (i.e. not latent).
+    return (this->istatus() > 2) | (this->istatus() == 1);
+}
+
 double Infectee::time_next() const
 {
     // Return time of next phase in infection.
