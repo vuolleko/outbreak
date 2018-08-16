@@ -17,6 +17,7 @@ Estimation in emerging epidemics: biases and remedies, arXiv:1803.01688v1.
 #include <random>
 #include <vector>
 #include <cstdlib>
+#include <cmath>
 #include <Eigen/Core>
 
 #include "infectee.hpp"
@@ -32,14 +33,15 @@ class Outbreak
     Outbreak(std::mt19937_64 &prng, const params_struct &params = params_struct()) : prng(prng), params(params)
 
     {
-        uint n_output = lrint(1. * params.n_iter / params.output_interval);
-
+        uint n_output = lrint(1. * params.max_time / params.output_interval);
         this->counters = Eigen::MatrixXi::Zero(n_output, N_STATES);
 
         std::vector<Infectee *> new_infected, new_infected1;
         this->infected.push_back(new Infectee(NULL, 0, prng, params));
         uint output_counter = 0;
-        for (uint time = 1; time <= params.n_iter; ++time)
+
+        double time = params.timestep;
+        while (time <= params.max_time)
         {
             // iterate over all infected individuals
             for (std::vector<Infectee *>::iterator it = this->infected.begin(); it != this->infected.end(); ++it)
@@ -52,7 +54,7 @@ class Outbreak
                     new_infected.insert(new_infected.end(), new_infected1.begin(), new_infected1.end());
                 }
 
-                if (time % params.output_interval == 0)
+                if (std::fmod(time, params.output_interval) < params.timestep)
                     this->counters(output_counter, (*it)->istatus())++;
             }
 
@@ -64,7 +66,8 @@ class Outbreak
                 new_infected.clear();
             }
 
-            if (time % params.output_interval == 0)
+            // if (time % params.output_interval == 0)
+            if (std::fmod(time, params.output_interval) < params.timestep)
             {
                 if (params.verbose)
                     std::cout << "t=" << time << ": " << this->counters.row(output_counter) << std::endl;
@@ -77,6 +80,7 @@ class Outbreak
                     std::cout << "Max number of infected individuals reached. Stopping." << std::endl;
                 break;
             }
+            time += params.timestep;
         }
     }
 
@@ -123,7 +127,6 @@ class Outbreak
 int main(int argc, char *argv[])
 {
     params_struct params;
-    // params.n_iter = 70;
     params.verbose = true;
     uint seed;
     double R0;

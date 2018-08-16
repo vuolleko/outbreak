@@ -25,8 +25,9 @@ struct params_struct
     double dying_period_shape = 4. / 9.; // gamma
     double dying_period_scale = 9.;
     double infect_delta = 2.941; // time between infections
-    uint n_iter = 154;           // number of model iterations (e.g. days)
-    uint output_interval = 7;    // interval of output (e.g. week)
+    double max_time = 154.;           // max model time (e.g. days)
+    double output_interval = 7.;    // interval of output (e.g. week)
+    double timestep = 0.01;
     uint max_infected = 100000;  // stop iterating if reached
     bool verbose = false;  // true for printing progress etc.
 };
@@ -62,7 +63,7 @@ public:
     std::vector<Infectee *> update(double time, std::mt19937_64 &prng, params_struct params); // Depending on time, update status of infection and infect someone.
 
 private:
-    uint time_last_infection;                // Time of latest infection by self.
+    double time_last_infection;              // Time of latest infection by self.
     std::vector<uint> status_trajectory;     // Progression of infection with respect to infection states.
     Eigen::ArrayXd end_times;                // End times of phases in `status_trajectory`.
     std::vector<uint>::iterator status_iter; // Iterator for `status_trajectory`.

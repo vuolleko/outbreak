@@ -10,13 +10,12 @@ np::ndarray simulateR0(np::ndarray &py_R0, uint batch_size, uint seed)
 {
     std::mt19937_64 prng(seed);
     params_struct params;
-    params.n_iter = 70;
 
     // convert input R0 to Eigen
     Eigen::Map<Eigen::VectorXd> R0((double *) py_R0.get_data(), batch_size);
 
     // setup output matrix
-    uint n_output = lrint(1. * params.n_iter / params.output_interval);
+    uint n_output = lrint(1. * params.max_time / params.output_interval);
     RowMatrixXi output(batch_size, n_output);
 
     // mean infectious period
@@ -29,12 +28,10 @@ np::ndarray simulateR0(np::ndarray &py_R0, uint batch_size, uint seed)
     {
         // setup simulation-specific params
         params.infect_delta = mean_inf_period / R0[i];
-        std::cout << "i=" << i << ' ' << R0[i] << ' ' << params.infect_delta << std::endl;
 
         Outbreak ob(prng, params);
         c = ob.getCounters();
         output.row(i) = c.rowwise().sum() - c.col(0) - c.col(2);
-        // std::cout << output.row(i) << std::endl;
     }
 
     // convert output to numpy array
