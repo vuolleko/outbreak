@@ -45,30 +45,34 @@ const std::string States[N_STATES]{
 
 class Infectee
 {
-public:
-    const Infectee *infector;         // The individual who caused infection.
-    const double infection_time;      // Time of infection.
-    std::vector<Infectee *> infected; // Individuals infected by self.
+    public:
+        Infectee(Infectee *infector, double infection_time, std::mt19937_64 &prng, params_struct params);
+        ~Infectee();
 
-    Infectee(Infectee *infector, double infection_time, std::mt19937_64 &prng, params_struct params);
-    ~Infectee();
+        bool can_infect() const;           // Return whether self can infect others.
+        bool is_reported() const;          // Return whether infection has been reported.
+        std::string status() const;        // Return current status from the State enum.
 
-    Infectee *infect(Infectee *other); // Mark `other` as infected by self.
-    int n_infected() const;            // Return the number of infected by self.
-    int istatus() const;               // Return the index to current status;
-    bool can_infect() const;           // Return whether self can infect others.
-    bool is_reported() const;          // Return whether infection has been reported.
-    std::string status() const;        // Return current status from the State enum.
+        std::vector<Infectee *> update(double time, std::mt19937_64 &prng, params_struct params); // Depending on time, update status of infection and infect someone.
 
-    std::vector<Infectee *> update(double time, std::mt19937_64 &prng, params_struct params); // Depending on time, update status of infection and infect someone.
+    private:
+        const Infectee *infector;          // The individual who caused infection.
+        const double infection_time;       // Time of infection.
 
-private:
-    double time_last_infection;              // Time of latest infection by self.
-    std::vector<uint> status_trajectory;     // Progression of infection with respect to infection states.
-    Eigen::ArrayXd end_times;                // End times of phases in `status_trajectory`.
-    std::vector<uint>::iterator status_iter; // Iterator for `status_trajectory`.
+        Infectee *infect(Infectee *other); // Mark `other` as infected by self.
+        std::vector<Infectee *> infected;  // Individuals infected by self.
+        int n_infected() const;            // Return the number of infected by self.
 
-    double time_next() const; // Return time of next phase in infection.
+        std::vector<uint> status_trajectory;     // Progression of infection with respect to infection states.
+        Eigen::ArrayXd end_times;                // End times of phases in `status_trajectory`.
+        std::vector<uint>::iterator status_iter; // Iterator for `status_trajectory`.
+
+        int istatus() const;               // Return the index to current status;
+        double time_next() const;          // Return time of next phase in infection.
+        double time_last_infection;        // Time of latest infection by self.
+
+    friend class Outbreak;
+    friend std::ostream &operator<<(std::ostream &os, Infectee const &inf);
 };
 
 // Allow printing a representation of Infectee objects
