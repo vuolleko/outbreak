@@ -19,6 +19,7 @@ Estimation in emerging epidemics: biases and remedies, arXiv:1803.01688v1.
 #include <vector>
 #include <cstdlib>
 #include <cmath>
+#include <chrono>
 #include <Eigen/Core>
 
 #include "infectee.hpp"
@@ -182,19 +183,20 @@ int main(int argc, char *argv[])
 
     if (argc > 1)
     {
-        seed = std::atoi(argv[1]);
-    }
-    else
-    {
-        seed = 0;
-    }
-    if (argc > 2)
-    {
-        R0 = std::atof(argv[2]);
+        R0 = std::atof(argv[1]);
     }
     else
     {
         R0 = 1.7;
+    }
+    if (argc > 2)
+    {
+        seed = std::atoi(argv[2]);
+    }
+    else
+    {
+        seed = static_cast<uint>(std::chrono::system_clock::now().time_since_epoch().count());
+        std::cout << "Using seed = " << seed << std::endl;
     }
     std::mt19937_64 prng(seed);
     params.infect_delta = params.infect_period_shape * params.infect_period_scale / R0;
