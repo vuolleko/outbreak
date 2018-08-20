@@ -45,6 +45,8 @@ class Outbreak
         double time = params.timestep;
         while (time <= params.max_time)
         {
+            bool is_output_step = std::fmod(time + 1e-9, params.output_interval) < params.timestep;
+            
             // iterate over all infected individuals
             for (std::vector<Infectee *>::iterator it = this->infected.begin(); it != this->infected.end(); ++it)
             {
@@ -56,7 +58,7 @@ class Outbreak
                     new_infected.insert(new_infected.end(), new_infected1.begin(), new_infected1.end());
                 }
 
-                if (std::fmod(time, params.output_interval) < params.timestep)
+                if (is_output_step)
                     this->counters(output_counter, (*it)->istatus())++;
             }
 
@@ -68,7 +70,7 @@ class Outbreak
                 new_infected.clear();
             }
 
-            if (std::fmod(time, params.output_interval) < params.timestep)
+            if (is_output_step)
             {
                 if (params.verbose)
                     std::cout << "t=" << time << ": " << this->counters.row(output_counter) << std::endl;
