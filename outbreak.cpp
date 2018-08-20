@@ -13,6 +13,7 @@ Estimation in emerging epidemics: biases and remedies, arXiv:1803.01688v1.
 */
 
 #include <iostream>
+#include <iomanip>
 #include <math.h>
 #include <random>
 #include <vector>
@@ -66,7 +67,6 @@ class Outbreak
                 new_infected.clear();
             }
 
-            // if (time % params.output_interval == 0)
             if (std::fmod(time, params.output_interval) < params.timestep)
             {
                 if (params.verbose)
@@ -122,6 +122,55 @@ class Outbreak
 
         return (float) n_infected / n_infectors;
     }
+
+    // Print various statistics for debugging.
+    void printStats()
+    {
+        const uint N_GROUPS = 4;
+        Eigen::ArrayXd end_time_sums = Eigen::ArrayXd::Zero(N_GROUPS);
+        Eigen::ArrayXi status_sums = Eigen::ArrayXi::Zero(N_GROUPS);
+        double offset;
+
+        for (std::vector<Infectee *>::iterator it = this->infected.begin(); it != this->infected.end(); ++it)
+        {
+            // handle latent period
+            if ((*it)->status_trajectory[1] == 1)
+                offset = (*it)->end_times[0];
+            else
+                offset = (*it)->end_times[2];
+            end_time_sums[0] += offset - (*it)->infection_time;
+            status_sums[0]++;
+
+            // infectious period
+            end_time_sums[1] += (*it)->end_times[3] - offset;
+            offset = (*it)->end_times[3];
+            status_sums[1]++;
+
+            // recovering period
+            if ((*it)->status_trajectory[3] == 4)
+            {
+                end_time_sums[2] += (*it)->end_times[4] - offset;
+                status_sums[2]++;
+            }
+            else // dying period
+            {
+                end_time_sums[3] += (*it)->end_times[5] - offset;
+                status_sums[3]++;
+            }
+        }
+
+        std::cout.precision(5);
+        std::cout << std::setw(20) << "Means:" << std::setw(20) << "Latent period" 
+                  << std::setw(20) << "Infectious period" << std::setw(20) << "Recovering period" 
+                  << std::setw(20) << "Dying period" << std::endl;
+        std::cout << std::setw(20) << (end_time_sums / status_sums.cast<double>()).transpose() << std::endl;
+        std::cout << std::setw(20) << "Expected:" << std::setw(20) << params.latent_period_scale * params.latent_period_shape 
+                  << std::setw(20) << params.infect_period_scale * params.infect_period_shape
+                  << std::setw(20) << params.recover_period_scale * params.recover_period_shape
+                  << std::setw(20) << params.dying_period_scale * params.dying_period_shape << std::endl;
+        std::cout << "Pr(recovery): " << (1. * status_sums[2]) / (status_sums[2] + status_sums[3]) 
+                  << " Expected " << params.p_recovery << std::endl;
+    }
 };
 
 int main(int argc, char *argv[])
@@ -158,9 +207,13 @@ int main(int argc, char *argv[])
     // std::cout << c << std::endl;
 
     std::vector<Infectee*> inf = ob.getInfected();
-    std::cout << *(inf[0]) << std::endl;
-    std::cout << *(inf[2]) << std::endl;
-    std::cout << *(inf[2]) << std::endl;
+    if (inf.size() > 3)
+    {
+        std::cout << *(inf[0]) << std::endl;
+        std::cout << *(inf[1]) << std::endl;
+        std::cout << *(inf[2]) << std::endl;
+    }
 
+    ob.printStats();
     return 0;
 }
