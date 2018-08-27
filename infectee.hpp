@@ -2,6 +2,7 @@
 #define INFECTEE_H
 
 #include <iostream>
+#include <random>
 #include <vector>
 #include <Eigen/Core>
 
@@ -24,10 +25,10 @@ struct params_struct
     double recover_period_scale = 3.;
     double dying_period_shape = 4. / 9.; // gamma
     double dying_period_scale = 9.;
-    double infect_delta = 2.941; // time between infections
-    double max_time = 154.;           // max model time (e.g. days)
+    double infect_delta = 2.941; // avg time between infections
+    double max_time = 364.;           // max model time (e.g. days)
     double output_interval = 7.;    // interval of output (e.g. week)
-    double timestep = 0.01;
+    double timestep = 0.2;
     uint max_infected = 100000;  // stop iterating if reached
     bool verbose = false;  // true for printing progress etc.
 };
@@ -53,7 +54,7 @@ class Infectee
         bool is_reported() const;          // Return whether infection has been reported.
         std::string status() const;        // Return current status from the State enum.
 
-        std::vector<Infectee *> update(double time, std::mt19937_64 &prng, params_struct params); // Depending on time, update status of infection and infect someone.
+        std::vector<Infectee *> update(double time, std::mt19937_64 &prng, params_struct params); // Depending on time, update status of infection and possibly infect someone.
 
     private:
         const Infectee *infector;          // The individual who caused infection.
@@ -70,6 +71,8 @@ class Infectee
         int istatus() const;               // Return the index to current status;
         double time_next() const;          // Return time of next phase in infection.
         double time_last_infection;        // Time of latest infection by self.
+
+        std::bernoulli_distribution rInfect;  // random engine for infecting
 
     friend class Outbreak;
     friend std::ostream &operator<<(std::ostream &os, Infectee const &inf);

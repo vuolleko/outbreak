@@ -17,6 +17,7 @@ Infectee::Infectee(Infectee *infector, double infection_time, std::mt19937_64 &p
     std::gamma_distribution<double> gamma_infect_period(params.infect_period_shape,
                                                         params.infect_period_scale);
     std::bernoulli_distribution will_recover(params.p_recovery);
+    this->rInfect = std::bernoulli_distribution(params.timestep / params.infect_delta);
 
     // In the following several lines, set future evolution steps of the infection
     this->status_trajectory.push_back(0);
@@ -33,7 +34,7 @@ Infectee::Infectee(Infectee *infector, double infection_time, std::mt19937_64 &p
         this->end_times[1] = incubation_factor * latent_period;
     }
     else
-    { // symptoms before infectious
+    { // symptoms after infectious
         this->status_trajectory.push_back(2);
         this->end_times[0] = incubation_factor * latent_period;
         this->end_times[2] = latent_period;
@@ -67,7 +68,7 @@ Infectee::Infectee(Infectee *infector, double infection_time, std::mt19937_64 &p
     this->end_times = this->end_times + infection_time;
 
     this->status_iter = this->status_trajectory.begin();
-    this->time_last_infection = infection_time;  // just an initial value
+    this->time_last_infection = std::nan("1.");
 }
 
 Infectee::~Infectee()
@@ -103,13 +104,13 @@ std::string Infectee::status() const
 bool Infectee::can_infect() const
 {
     // Return whether self can infect others.
-    return (this->istatus() == 2) | (this->istatus() == 3);
+    return (this->istatus() == 2) || (this->istatus() == 3);
 }
 
 bool Infectee::is_reported() const
 {
     // Return whether infection has been reported (i.e. not latent).
-    return (this->istatus() > 2) | (this->istatus() == 1);
+    return (this->istatus() > 2) || (this->istatus() == 1);
 }
 
 double Infectee::time_next() const
@@ -120,22 +121,22 @@ double Infectee::time_next() const
 
 std::vector<Infectee *> Infectee::update(double time, std::mt19937_64 &prng, params_struct params)
 {
-    // Depending on time, update status of infection and infect someone.
-    std::vector<Infectee *> new_infected;
+    // Depending on time, update status of infection and possibly infect someone.
+    std::vector<Infectee *> new_infected;  // Currently size<=1
 
-    bool can_infect = this->can_infect();
+    bool infectious = this->can_infect();
 
     while (time >= this->time_next())
     {
         this->status_iter++;
-        can_infect = can_infect | this->can_infect();
+        infectious = infectious || this->can_infect();
     }
 
-    if (can_infect)
+    if (infectious)
     {
-        while (time - this->time_last_infection > params.infect_delta)
+        if (this->rInfect(prng))
         {
-            this->time_last_infection += params.infect_delta;
+            this->time_last_infection = time;
             new_infected.push_back(this->infect(new Infectee(this, time, prng, params)));
         }
     }

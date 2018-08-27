@@ -122,6 +122,7 @@ class Outbreak
                 }
             }
         }
+        // std::cout << "N_infected: " << n_infected << " n_infectors: " << n_infectors << std::endl;
 
         return (float) n_infected / n_infectors;
     }
@@ -216,6 +217,7 @@ int main(int argc, char *argv[])
         std::cout << *(inf[0]) << std::endl;
         std::cout << *(inf[1]) << std::endl;
         std::cout << *(inf[2]) << std::endl;
+        std::cout << *(inf[(int) (inf.size()/4)]) << std::endl;
     }
 
     ob.printStats();
