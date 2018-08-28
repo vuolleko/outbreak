@@ -29,9 +29,16 @@ np::ndarray simulateR0(np::ndarray &py_R0, uint batch_size, uint seed)
         // setup simulation-specific params
         params.infect_delta = mean_inf_period / R0[i];
 
-        Outbreak ob(prng, params);
-        c = ob.getCounters();
-        output.row(i) = c.rowwise().sum() - c.col(0) - c.col(2);
+        while (true)
+        {
+            Outbreak ob(prng, params);
+            c = ob.getCounters();
+            output.row(i) = c.rowwise().sum() - c.col(0) - c.col(2);
+
+            // Consider only "exploding" outbreak simulations (note effect on prng)
+            if ((uint) output.row(i).sum() > 10 * n_output)
+                break;
+        }
     }
 
     // convert output to numpy array
