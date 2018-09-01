@@ -1,2 +1,4 @@
 *.ipynb linguist-documentation
-
+*.tex linguist-documentation
+*.bib linguist-documentation
+*.pdf linguist-documentation

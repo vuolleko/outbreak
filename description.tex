@@ -1,0 +1,15 @@
+\documentclass{article}
+    \usepackage{natbib}
+\begin{document}
+    \section{Outbreak: Model Description}
+
+    The program simulates an outbreak of a virus in a homogeneous and infinite community. The default parameterization is chosen for investigation of the Ebola virus, and the general implementation mostly follows the description in \citet{Britton}. The program is implemented in C++ with Python bindings using the Boost library to facilitate interfacing with the ELFI inference framework \citep{Lintusaari}.
+
+    In more detail, the main program starts with a single infected individual and iterates in steps of $\Delta t = 0.2$ days until either 52 weeks pass or 100,000 individuals have been infected. During each time step the status of each infected individual is updated, and if the current status is infectious, a new individual is infected with probability $p_{inf} = \Delta t / \Delta T$, where $\Delta T = \hat t_{inf} / R_0$ is the mean time between infections, $\hat t_{inf}$ is the mean duration of infectivity and $R_0$ is the basic reproduction number i.e. the mean number of secondary infections. The program keeps track of infection pathways and times, although these are unused in the current inference task.
+
+    Upon infection, an individual's fate is determined as follows. The initial latent period lasts for $t_{lat} \sim \Gamma(2, 5)$ (shape, scale) multiplied by an incubation factor $\sim U(0.8, 1.2)$ depicting the difference between the onset of symptoms and infectiousness and causing an interplay with the following infectious period $t_{inf} \sim \Gamma(1, 5)$. The individual survives with the probability $p_{reco} = 0.3$ after a recovery period of $t_{reco} \sim \Gamma(4, 3)$, or perishes after a period of $t_{die} \sim \Gamma(4/9, 9)$. The infection is considered 'reported' always once symptoms arise, and the inference is based on weekly counts of reported cases. 
+
+    \bibliography{references}
+    \bibliographystyle{plainnat}
+
+\end{document}
